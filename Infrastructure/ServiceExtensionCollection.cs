@@ -1,5 +1,6 @@
 ﻿using ChatApp.Web.DataAccess;
 using ChatApp.Web.Model.Common;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace ChatApp.Web.Infrastructure
@@ -10,19 +11,6 @@ namespace ChatApp.Web.Infrastructure
         {
             services.AddScoped<IDbContext, DatabaseContext>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-            //filter the entity
-
-            //var entityTypes = assembly.GetTypes().Where(x=>x.IsClass && !x.IsInterface && x.IsSubclassOf(typeof(BaseEntity)));
-            //foreach(var entityType in entityTypes)
-            //{
-            //    var repositoryInterface = typeof(IRepository<>).MakeGenericType(entityType);
-            //    var repositoryImplementation = typeof(RepositoryBase<>).MakeGenericType(entityType);
-
-            //    // Register the repository services
-                
-            //    services.AddScoped(repositoryInterface, repositoryImplementation);
-            //}
 
             //Repository Configuration
             var repositoryTypes = assembly.GetTypes()
@@ -70,6 +58,29 @@ namespace ChatApp.Web.Infrastructure
                 }
 
                 services.AddScoped(interfaces[0], serviceType);
+            }
+        }
+        public static void AddRepositroyDependingInterface(this IServiceCollection services, Assembly assembly)
+        {
+            services.AddScoped<IDbContext, DatabaseContext>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            //Get interfaces
+            var interfaces = assembly.GetTypes()
+              .Where(type =>type.IsInterface && type.Name.Contains("Repository") && !type.Name.Equals("IRepository`1"))
+              .ToList();
+            foreach(Type typeInf in interfaces)
+            {
+                //find repositor
+                string name = typeInf.Name;
+                string interfaceWithoutPrefix = name.Substring(1);
+                List<Type> repositoryClass = assembly.GetTypes()
+                .Where(type => !type.IsInterface &&
+                               !type.IsAbstract &&
+                               type.Name.Equals(interfaceWithoutPrefix) &&
+                               !type.Name.Equals("RepositoryBase`1"))                               
+                               .ToList();
+                services.AddScoped(typeInf, repositoryClass[0]);
             }
         }
     }
