@@ -4,5 +4,8 @@ using ChatApp.Web.Model.Common;
 
 namespace ChatApp.Web.Infrastructure
 {
-   
+    public static class QueryOptionHelper
+    {
+
+    }
 }
